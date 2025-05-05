@@ -8,9 +8,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.anasbinrashid.studysync.databinding.FragmentTasksBinding
 import com.anasbinrashid.studysync.model.Task
+import com.anasbinrashid.studysync.ui.courses.CoursesFragmentDirections
 import com.anasbinrashid.studysync.util.DatabaseHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -242,7 +244,8 @@ class TasksFragment : Fragment() {
 
     private fun navigateToTaskDetail(task: Task) {
         // Navigate to task detail using Navigation Component
-        // This will be implemented when we create the TaskDetailFragment
+        val action = TasksFragmentDirections.actionTasksFragmentToTaskDetailFragment(task.id)
+        findNavController().navigate(action)
     }
 
     private fun showLoading(loading: Boolean) {

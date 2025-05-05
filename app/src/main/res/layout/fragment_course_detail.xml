@@ -279,7 +279,7 @@
             android:layout_gravity="bottom|end"
             android:layout_margin="16dp"
             android:contentDescription="Edit Course"
-            android:src="@drawable/ic_add"
+            android:src="@drawable/ee"
             app:backgroundTint="@color/colorAccent" />
 
         <ProgressBar

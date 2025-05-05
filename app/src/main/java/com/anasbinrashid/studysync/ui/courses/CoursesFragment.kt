@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.anasbinrashid.studysync.R
 import com.anasbinrashid.studysync.databinding.FragmentCoursesBinding
@@ -259,10 +260,11 @@ class CoursesFragment : Fragment() {
     }
 
     private fun navigateToCourseDetail(course: Course) {
-        // Navigate to course detail using Navigation Component
-        // This will be implemented when we create the CourseDetailFragment
-    }
+        // Navigate to course detail using Navigation Component with the courseId argument
+        val action = CoursesFragmentDirections.actionCoursesFragmentToCourseDetailFragment(course.id)
+        findNavController().navigate(action)
 
+    }
     private fun showLoading(loading: Boolean) {
         binding.progressBar.visibility = if (loading) View.VISIBLE else View.GONE
     }

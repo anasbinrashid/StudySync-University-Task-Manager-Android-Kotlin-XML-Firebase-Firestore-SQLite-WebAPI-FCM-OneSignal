@@ -7,6 +7,7 @@ import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -81,6 +82,22 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         // Set navigation item selected listener
         binding.navView.setNavigationItemSelectedListener(this)
+
+        // Add destination change listener to handle FAB visibility
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            updateFabVisibility(destination)
+        }
+    }
+
+    private fun updateFabVisibility(destination: NavDestination) {
+        when (destination.id) {
+            R.id.coursesFragment, R.id.tasksFragment, R.id.resourcesFragment -> {
+                binding.fabAdd.show()
+            }
+            else -> {
+                binding.fabAdd.hide()
+            }
+        }
     }
 
     fun navigateToTab(destinationId: Int) {
@@ -166,19 +183,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.dashboardFragment , R.id.settingsFragment -> {
+            R.id.dashboardFragment, R.id.settingsFragment -> {
                 // Navigate using the Navigation Component
                 navController.navigate(item.itemId)
-
-                // set visibility of fabAdd to true
-                binding.fabAdd.hide()
             }
             R.id.tasksFragment, R.id.coursesFragment, R.id.resourcesFragment -> {
                 // Navigate using the Navigation Component
                 navController.navigate(item.itemId)
-
-                // set visibility of fabAdd to true
-                binding.fabAdd.show()
             }
             R.id.logout -> {
                 // Sign out from Firebase

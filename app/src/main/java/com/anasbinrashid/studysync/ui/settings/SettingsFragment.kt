@@ -385,9 +385,8 @@ class SettingsFragment : Fragment() {
         val privacyPolicies = arrayOf(
             "StudySync collects minimal data necessary for app functionality.",
             "Your privacy matters to us. StudySync stores your data securely.",
-            "We collect data to improve your experience and provide personalized features.",
-            "We collect data solely for app functionality and improvement, never for advertising purposes.",
-            "Your personal information is encrypted and securely stored. StudySync will never sell your data to third parties."
+            "We collect data solely for app functionality and improvement.",
+            "Your personal information is encrypted and securely stored."
         )
 
         val randomPolicy = privacyPolicies[Random().nextInt(privacyPolicies.size)]
