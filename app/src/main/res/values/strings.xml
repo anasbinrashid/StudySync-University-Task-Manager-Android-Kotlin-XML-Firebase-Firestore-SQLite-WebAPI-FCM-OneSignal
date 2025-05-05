@@ -1,0 +1,53 @@
+<resources>
+    <string name="app_name">StudySync</string>
+
+    <!-- Common -->
+    <string name="back_button">Back</string>
+    <string name="app_logo">App Logo</string>
+
+    <!-- Login and Registration -->
+    <string name="welcome_back">Welcome Back!</string>
+    <string name="login_to_continue">Login to continue</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="login">Login</string>
+    <string name="no_account_yet">Don\'t have an account yet?</string>
+    <string name="register">Register</string>
+    <string name="create_account">Create Account</string>
+    <string name="setup_your_account">Setup your academic profile</string>
+    <string name="full_name">Full Name</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="university">University</string>
+    <string name="current_semester">Current Semester</string>
+
+    <!-- Navigation -->
+    <string name="dashboard">Dashboard</string>
+    <string name="tasks">Tasks</string>
+    <string name="courses">Courses</string>
+    <string name="resources">Resources</string>
+    <string name="settings">Settings</string>
+    <string name="logout">Logout</string>
+    <string name="account">Account</string>
+    <string name="profile_image">Profile Image</string>
+    <string name="user_name">User Name</string>
+    <string name="user_email">user@example.com</string>
+
+    <!-- Dashboard -->
+    <string name="hello_user">Hello, %s!</string>
+    <string name="today_date">%s</string>
+    <string name="semester_value">Fall 2024</string>
+    <string name="weeks_completed">Weeks Completed</string>
+    <string name="weeks_completed_value">6/16</string>
+    <string name="courses_count">5</string>
+    <string name="tasks_due">Tasks Due</string>
+    <string name="tasks_count">8</string>
+    <string name="view_all">View All</string>
+    <string name="upcoming_assignments">Upcoming Assignments</string>
+    <string name="no_upcoming_assignments">No upcoming assignments</string>
+    <string name="study_progress">Study Progress</string>
+    <string name="add_new_task">Add New Task</string>
+
+    <!-- Task Item -->
+    <string name="task_type">Task Type</string>
+</resources>

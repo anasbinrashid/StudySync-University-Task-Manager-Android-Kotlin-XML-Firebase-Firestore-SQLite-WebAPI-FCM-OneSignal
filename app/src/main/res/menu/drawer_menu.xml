@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/dashboardFragment"
+            android:icon="@drawable/ic_dashboard"
+            android:title="@string/dashboard" />
+        <item
+            android:id="@+id/tasksFragment"
+            android:icon="@drawable/ic_tasks"
+            android:title="@string/tasks" />
+        <item
+            android:id="@+id/coursesFragment"
+            android:icon="@drawable/ic_courses"
+            android:title="@string/courses" />
+        <item
+            android:id="@+id/resourcesFragment"
+            android:icon="@drawable/ic_resources"
+            android:title="@string/resources" />
+    </group>
+
+    <item android:title="@string/account">
+        <menu>
+            <item
+                android:id="@+id/settingsFragment"
+                android:icon="@drawable/ic_settings"
+                android:title="@string/settings" />
+            <item
+                android:id="@+id/logout"
+                android:icon="@drawable/ic_logout"
+                android:title="@string/logout" />
+        </menu>
+    </item>
+</menu>

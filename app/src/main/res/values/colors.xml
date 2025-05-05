@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Colors -->
+    <color name="colorPrimary">#1565C0</color>
+    <color name="colorPrimaryDark">#0D47A1</color>
+    <color name="colorPrimaryLight">#42A5F5</color> <!-- Added -->
+
+    <!-- Accent -->
+    <color name="colorAccent">#FF4081</color>
+
+    <!-- Semantic Colors -->
+    <color name="colorSuccess">#4CAF50</color>  <!-- Green for success, low priority, completed -->
+    <color name="colorWarning">#FFC107</color>  <!-- Yellow/Orange for medium priority, due soon -->
+    <color name="colorError">#F44336</color>    <!-- Red for high priority, overdue -->
+    <color name="colorInfo">#2196F3</color>     <!-- Added: Blue for informational elements -->
+
+    <!-- Text Colors -->
+    <color name="textPrimary">#212121</color>
+    <color name="textSecondary">#757575</color>
+
+    <!-- Utility Colors -->
+    <color name="divider">#BDBDBD</color>
+    <color name="chipBackground">#E0E0E0</color> <!-- Added -->
+
+    <!-- Base Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="red">#FF0000</color>
+    <color name="green">#00FF00</color>
+    <color name="background">#F5F5F5</color>
+</resources>

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_navigation"
+    app:startDestination="@id/dashboardFragment">
+
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.anasbinrashid.studysync.ui.dashboard.DashboardFragment"
+        android:label="Dashboard"
+        tools:layout="@layout/fragment_dashboard">
+        <action
+            android:id="@+id/action_dashboardFragment_to_tasksFragment"
+            app:destination="@id/tasksFragment" />
+        <action
+            android:id="@+id/action_dashboardFragment_to_coursesFragment"
+            app:destination="@id/coursesFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/coursesFragment"
+        android:name="com.anasbinrashid.studysync.ui.courses.CoursesFragment"
+        android:label="Courses"
+        tools:layout="@layout/fragment_courses">
+        <action
+            android:id="@+id/action_coursesFragment_to_addEditCourseFragment"
+            app:destination="@id/addEditCourseFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/tasksFragment"
+        android:name="com.anasbinrashid.studysync.ui.tasks.TasksFragment"
+        android:label="Tasks"
+        tools:layout="@layout/fragment_tasks">
+        <action
+            android:id="@+id/action_tasksFragment_to_taskDetailFragment"
+            app:destination="@id/taskDetailFragment" />
+        <action
+            android:id="@+id/action_tasksFragment_to_addEditTaskFragment"
+            app:destination="@id/addEditTaskFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/resourcesFragment"
+        android:name="com.anasbinrashid.studysync.ui.resources.ResourcesFragment"
+        android:label="Resources"
+        tools:layout="@layout/fragment_resources">
+        <action
+            android:id="@+id/action_resourcesFragment_to_addEditResourceFragment"
+            app:destination="@id/addEditResourceFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.anasbinrashid.studysync.ui.settings.SettingsFragment"
+        android:label="Settings"
+        tools:layout="@layout/fragment_settings" />
+
+    <fragment
+        android:id="@+id/taskDetailFragment"
+        android:name="com.anasbinrashid.studysync.ui.tasks.TaskDetailFragment"
+        android:label="Task Details"
+        tools:layout="@layout/fragment_task_detail">
+        <argument
+            android:name="taskId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/courseDetailFragment"
+        android:name="com.anasbinrashid.studysync.ui.courses.CourseDetailFragment"
+        tools:layout="@layout/fragment_course_detail">
+
+        <action
+            android:id="@+id/action_courseDetailFragment_to_addEditCourseFragment"
+            app:destination="@id/addEditCourseFragment" />
+
+
+        <action
+            android:id="@+id/action_courseDetailFragment_to_taskDetailFragment"
+            app:destination="@id/taskDetailFragment" />
+        <action
+            android:id="@+id/action_courseDetailFragment_to_addEditTaskFragment"
+            app:destination="@id/addEditTaskFragment" />
+
+
+
+        <argument
+            android:name="courseId"
+            app:argType="string" />
+    </fragment>
+
+
+    <fragment
+        android:id="@+id/addEditTaskFragment"
+        android:name="com.anasbinrashid.studysync.ui.tasks.AddEditTaskFragment"
+        android:label="Add/Edit Task"
+        tools:layout="@layout/fragment_add_edit_task">
+        <argument
+            android:name="taskId"
+            android:defaultValue=""
+            app:argType="string" />
+        <argument
+            android:name="courseId"
+            android:defaultValue=""
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addEditCourseFragment"
+        android:name="com.anasbinrashid.studysync.ui.courses.AddEditCourseFragment"
+        android:label="Add/Edit Course"
+        tools:layout="@layout/fragment_add_edit_course">
+        <argument
+            android:name="courseId"
+            android:defaultValue=""
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addEditResourceFragment"
+        android:name="com.anasbinrashid.studysync.ui.resources.AddEditResourceFragment"
+        android:label="Add/Edit Resource"
+        tools:layout="@layout/fragment_add_edit_resource">
+        <argument
+            android:name="resourceId"
+            android:defaultValue=""
+            app:argType="string" />
+        <argument
+            android:name="courseId"
+            android:defaultValue=""
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/notificationsFragment"
+        android:name="com.anasbinrashid.studysync.ui.notifications.NotificationsFragment"
+        android:label="Notifications"
+        tools:layout="@layout/fragment_notifications">
+        <action
+            android:id="@+id/action_notificationsFragment_to_taskDetailFragment"
+            app:destination="@id/taskDetailFragment" />
+    </fragment>
+</navigation>
