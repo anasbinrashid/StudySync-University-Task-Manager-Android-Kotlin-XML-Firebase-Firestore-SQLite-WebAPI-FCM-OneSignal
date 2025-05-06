@@ -29,6 +29,7 @@ import com.anasbinrashid.studysync.databinding.FragmentAddEditResourceBinding
 import com.anasbinrashid.studysync.model.Course
 import com.anasbinrashid.studysync.model.Resource
 import com.anasbinrashid.studysync.util.DatabaseHelper
+import com.anasbinrashid.studysync.util.NotificationHelper
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
@@ -742,6 +743,15 @@ class AddEditResourceFragment : Fragment() {
                 dbHelper.markResourceAsSynced(resource.id)
                 showLoading(false)
 
+                // Show notification for resource update/addition
+                val notificationHelper = NotificationHelper(requireContext())
+                val action = if (isEditMode) "Updated" else "Added"
+                notificationHelper.showLocalNotification(
+                    resource.id.hashCode(),
+                    "Resource $action: ${resource.title}",
+                    "${resource.courseName} - ${getResourceTypeString(resource.type)}"
+                )
+
                 Toast.makeText(
                     requireContext(),
                     if (isEditMode) "Resource updated successfully" else "Resource added successfully",
@@ -785,6 +795,14 @@ class AddEditResourceFragment : Fragment() {
                 .document(resourceId)
                 .delete()
                 .addOnSuccessListener {
+                    // Show notification for resource deletion
+                    val notificationHelper = NotificationHelper(requireContext())
+                    notificationHelper.showLocalNotification(
+                        resourceId.hashCode(),
+                        "Resource Deleted: ${currentResource!!.title}",
+                        "${currentResource!!.courseName} - ${getResourceTypeString(currentResource!!.type)}"
+                    )
+
                     Toast.makeText(requireContext(), "Resource deleted", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }
@@ -793,6 +811,16 @@ class AddEditResourceFragment : Fragment() {
                     Toast.makeText(requireContext(), "Resource deleted locally", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }
+        }
+    }
+
+    private fun getResourceTypeString(type: Int): String {
+        return when (type) {
+            TYPE_NOTE -> "Note"
+            TYPE_IMAGE -> "Image"
+            TYPE_DOCUMENT -> "Document"
+            TYPE_LINK -> "Link"
+            else -> "Unknown"
         }
     }
 

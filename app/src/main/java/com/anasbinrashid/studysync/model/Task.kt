@@ -9,7 +9,7 @@ data class Task(
     val description: String = "",
     val courseId: String = "",
     val courseName: String = "",
-    val dueDate: Date = Date(),
+    var dueDate: Date = Date(),
     val priority: Int = 0,  // 0: Low, 1: Medium, 2: High
     val status: Int = 0,    // 0: Not Started, 1: In Progress, 2: Completed
     val type: Int = 0,      // 0: Assignment, 1: Project, 2: Exam, 3: Reading, etc.

@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.anasbinrashid.studysync.databinding.ActivityLoginBinding
 import com.google.firebase.auth.FirebaseAuth
+import com.onesignal.OneSignal
 
 class LoginActivity : AppCompatActivity() {
 
@@ -86,6 +87,14 @@ class LoginActivity : AppCompatActivity() {
                 if (task.isSuccessful) {
                     // Sign in success, update UI with the signed-in user's information
                     Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show()
+
+                    // fetch user id using email
+                    val user = auth.currentUser
+                    val id = user?.uid ?: return@addOnCompleteListener
+
+                    // Set OneSignal user ID
+
+                    OneSignal.login(id)
 
                     // Navigate to main activity
                     startActivity(Intent(this, MainActivity::class.java))

@@ -1,6 +1,8 @@
 package com.anasbinrashid.studysync.ui.tasks
 
 import android.app.AlertDialog
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -34,6 +36,7 @@ class TaskDetailFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private lateinit var dbHelper: DatabaseHelper
+    private val calendar = Calendar.getInstance()
 
     private var currentTask: Task? = null
 
@@ -132,6 +135,7 @@ class TaskDetailFragment : Fragment() {
             diffInDays <= 2 -> R.color.colorWarning  // Due soon
             else -> R.color.colorInfo                // Not urgent
         }
+
         binding.tvDaysRemaining.setBackgroundResource(daysRemainingBg)
 
         // Set task type icon
@@ -310,6 +314,16 @@ class TaskDetailFragment : Fragment() {
                     currentTask = updatedTask
                     updateReminderIcon(newReminderState)
                 }
+
+            // Update the reminder icon
+            val iconRes = if (newReminderState) R.drawable.ic_reminder else R.drawable.ic_t
+            binding.fabReminder.setImageResource(iconRes)
+
+        } else {
+            Toast.makeText(requireContext(), "Task not found", Toast.LENGTH_SHORT).show()
+            // Optionally, navigate back or show an error message
+            findNavController().navigateUp()
+
         }
     }
 
@@ -359,14 +373,100 @@ class TaskDetailFragment : Fragment() {
 
         // Date picker
         dialogBinding.etDate.setOnClickListener {
-            // Show date picker dialog
-            // This would be implemented in a real app
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH)
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val datePickerDialog = DatePickerDialog(
+                requireContext(),
+                { _, selectedYear, selectedMonth, selectedDay ->
+                    calendar.set(Calendar.YEAR, selectedYear)
+                    calendar.set(Calendar.MONTH, selectedMonth)
+                    calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
+                },
+                year,
+                month,
+                day
+            )
+
+            datePickerDialog.show()
+
+            // Update the EditText with the selected date
+            dialogBinding.etDate.setText(dateFormat.format(calendar.time))
+
+            // Set the due date in the task object
+            task.dueDate = calendar.time
+
+            // Update the task object in the local database
+            dbHelper.updateTask(task)
+
+            // Update the task object in Firestore
+            db.collection("tasks")
+                .document(task.id)
+                .update("dueDate", task.dueDate)
+                .addOnSuccessListener {
+                    Toast.makeText(requireContext(), "Due date updated", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener { e ->
+                    // Handle failure
+                    Toast.makeText(requireContext(), "Failed to update due date: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+
         }
 
         // Time picker
         dialogBinding.etTime.setOnClickListener {
             // Show time picker dialog
-            // This would be implemented in a real app
+            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+            val minute = calendar.get(Calendar.MINUTE)
+
+            val timePickerDialog = TimePickerDialog(
+                requireContext(),
+                { _, selectedHour, selectedMinute ->
+                    calendar.set(Calendar.HOUR_OF_DAY, selectedHour)
+                    calendar.set(Calendar.MINUTE, selectedMinute)
+
+                    // Update the EditText with the selected time
+                    dialogBinding.etTime.setText(timeFormat.format(calendar.time))
+
+                    // Set the due date in the task object
+                    task.dueDate = calendar.time
+
+                    // Update the task object in the local database
+                    dbHelper.updateTask(task)
+
+                    // Update the task object in Firestore
+                    db.collection("tasks")
+                        .document(task.id)
+                        .update("dueDate", task.dueDate)
+                        .addOnSuccessListener {
+                            Toast.makeText(requireContext(), "Due time updated", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener { e ->
+                            // Handle failure
+                            Toast.makeText(requireContext(), "Failed to update due time: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                },
+                hour,
+                minute,
+                false
+            )
+            timePickerDialog.show()
+
+            // Update the task object in the local database
+            dbHelper.updateTask(task)
+
+            // Update the task object in Firestore
+            db.collection("tasks")
+                .document(task.id)
+                .update("dueDate", task.dueDate)
+                .addOnSuccessListener {
+                    Toast.makeText(requireContext(), "Due time updated", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener { e ->
+                    // Handle failure
+                    Toast.makeText(requireContext(), "Failed to update due time: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
         }
 
         MaterialAlertDialogBuilder(requireContext())
@@ -413,6 +513,7 @@ class TaskDetailFragment : Fragment() {
                 }
         }
     }
+
 
     private fun showError(message: String) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()

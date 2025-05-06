@@ -16,6 +16,7 @@ import com.anasbinrashid.studysync.R
 import com.anasbinrashid.studysync.databinding.FragmentAddEditCourseBinding
 import com.anasbinrashid.studysync.model.Course
 import com.anasbinrashid.studysync.util.DatabaseHelper
+import com.anasbinrashid.studysync.util.NotificationHelper
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
@@ -516,6 +517,14 @@ class AddEditCourseFragment : Fragment() {
                 .document(updatedCourse.id)
                 .set(updatedCourse)
                 .addOnSuccessListener {
+                    // Show notification for course update
+                    val notificationHelper = NotificationHelper(requireContext())
+                    notificationHelper.showLocalNotification(
+                        updatedCourse.id.hashCode(),
+                        "Course Updated: ${updatedCourse.name}",
+                        "${updatedCourse.code} - ${updatedCourse.semester}"
+                    )
+
                     Toast.makeText(
                         requireContext(),
                         "Course updated successfully",
@@ -556,6 +565,14 @@ class AddEditCourseFragment : Fragment() {
                 .document(newCourse.id)
                 .set(newCourse)
                 .addOnSuccessListener {
+                    // Show notification for new course
+                    val notificationHelper = NotificationHelper(requireContext())
+                    notificationHelper.showLocalNotification(
+                        newCourse.id.hashCode(),
+                        "New Course Added: ${newCourse.name}",
+                        "${newCourse.code} - ${newCourse.semester}"
+                    )
+
                     Toast.makeText(
                         requireContext(),
                         "Course added successfully",
@@ -595,13 +612,20 @@ class AddEditCourseFragment : Fragment() {
                 .document(courseId)
                 .delete()
                 .addOnSuccessListener {
+                    // Show notification for course deletion
+                    val notificationHelper = NotificationHelper(requireContext())
+                    notificationHelper.showLocalNotification(
+                        courseId.hashCode(),
+                        "Course Deleted: ${currentCourse!!.name}",
+                        "${currentCourse!!.code} - ${currentCourse!!.semester}"
+                    )
+
                     Toast.makeText(requireContext(), "Course deleted", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }
                 .addOnFailureListener { e ->
                     // Continue with local deletion even if Firestore deletion fails
-                    Toast.makeText(requireContext(), "Course deleted locally", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(requireContext(), "Course deleted locally", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }
         }

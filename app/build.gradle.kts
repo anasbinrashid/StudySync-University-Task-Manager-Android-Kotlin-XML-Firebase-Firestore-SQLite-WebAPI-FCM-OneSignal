@@ -43,15 +43,20 @@ android {
 
 dependencies {
 
-    implementation ("de.hdodenhof:circleimageview:3.1.0")
-    
+    // Circle Image View
+    implementation("de.hdodenhof:circleimageview:3.1.0")
+
+    // OneSignal - Using specific stable version
+    implementation("com.onesignal:OneSignal:5.1.6")
+
+    // Basic
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // Navigation Component
+    // Navigation Component - use consistent versions
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
 
@@ -61,6 +66,11 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-database-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
+
+    implementation ("com.squareup.okhttp3:okhttp:4.10.0")
+
 
     // Room Database
     implementation("androidx.room:room-runtime:2.6.1")
@@ -80,11 +90,11 @@ dependencies {
     // Charts for dashboard
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
+    // Glide for image loading
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation ("androidx.navigation:navigation-fragment-ktx:2.5.3")
-    implementation ("androidx.navigation:navigation-ui-ktx:2.5.3")
-    implementation("com.github.bumptech.glide:glide:4.16.0")
 }

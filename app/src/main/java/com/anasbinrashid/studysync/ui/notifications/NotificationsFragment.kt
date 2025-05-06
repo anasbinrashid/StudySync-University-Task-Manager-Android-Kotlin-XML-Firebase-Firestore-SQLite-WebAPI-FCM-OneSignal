@@ -248,70 +248,34 @@ class NotificationsFragment : Fragment() {
             .update("reminderSet", isEnabled, "lastUpdated", updatedTask.lastUpdated, "isSynced", false)
             .addOnSuccessListener {
                 // Find and update the task in our lists
-                val index = reminderTasks.indexOfFirst { it.id == task.id }
+                val taskList = if (updatedTask.status == 2) completedTasks else reminderTasks
+                val index = taskList.indexOfFirst { it.id == updatedTask.id }
                 if (index != -1) {
-                    reminderTasks[index] = updatedTask
-                    reminderAdapter.notifyItemChanged(index)
-                } else {
-                    val completedIndex = completedTasks.indexOfFirst { it.id == task.id }
-                    if (completedIndex != -1) {
-                        completedTasks[completedIndex] = updatedTask
-                        completedTasksAdapter.notifyItemChanged(completedIndex)
+                    taskList[index] = updatedTask
+                    if (updatedTask.status == 2) {
+                        completedTasksAdapter.notifyItemChanged(index)
+                    } else {
+                        reminderAdapter.notifyItemChanged(index)
                     }
                 }
 
-                // Update notification scheduling
-                if (isEnabled && binding.switchNotifications.isChecked) {
+                // Update notifications
+                if (isEnabled) {
                     scheduleNotificationForTask(updatedTask)
                 } else {
                     notificationHelper.cancelNotification(updatedTask.id.hashCode())
                 }
             }
             .addOnFailureListener { e ->
-                // Continue with local update even if Firestore update fails
-                // Find and update the task in our lists
-                val index = reminderTasks.indexOfFirst { it.id == task.id }
-                if (index != -1) {
-                    reminderTasks[index] = updatedTask
-                    reminderAdapter.notifyItemChanged(index)
-                } else {
-                    val completedIndex = completedTasks.indexOfFirst { it.id == task.id }
-                    if (completedIndex != -1) {
-                        completedTasks[completedIndex] = updatedTask
-                        completedTasksAdapter.notifyItemChanged(completedIndex)
-                    }
-                }
-
-                // Update notification scheduling
-                if (isEnabled && binding.switchNotifications.isChecked) {
-                    scheduleNotificationForTask(updatedTask)
-                } else {
-                    notificationHelper.cancelNotification(updatedTask.id.hashCode())
-                }
+                Toast.makeText(
+                    requireContext(),
+                    "Failed to update reminder: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
     }
 
     private fun scheduleNotificationsForTasks() {
-        // Cancel all existing notifications first
-        notificationHelper.cancelAllNotifications()
-
-        // Schedule notifications for all tasks with reminders enabled
-        for (task in reminderTasks) {
-            if (task.reminderSet) {
-                scheduleNotificationForTask(task)
-            }
-        }
-    }
-
-    private fun scheduleNotificationForTask(task: Task) {
-        // Don't schedule notifications for completed tasks
-        if (task.status == 2) return
-
-        // Don't schedule if the due date has passed
-        val currentTime = System.currentTimeMillis()
-        if (task.dueDate.time <= currentTime) return
-
-        // Get reminder time (in minutes before due date)
         val reminderTime = when {
             binding.rb15Min.isChecked -> REMINDER_15_MIN
             binding.rb30Min.isChecked -> REMINDER_30_MIN
@@ -320,17 +284,21 @@ class NotificationsFragment : Fragment() {
             else -> REMINDER_1_HOUR
         }
 
-        // Calculate notification time
-        val notificationTimeMs = task.dueDate.time - (reminderTime * 60 * 1000)
+        // Schedule notifications for all upcoming tasks
+        for (task in reminderTasks) {
+            if (task.reminderSet) {
+                scheduleNotificationForTask(task, reminderTime)
+            }
+        }
+    }
 
-        // Only schedule if notification time is in the future
-        if (notificationTimeMs > currentTime) {
-            notificationHelper.scheduleTaskNotification(
-                task.id.hashCode(),
-                task.title,
-                "${task.courseName} - Due ${android.text.format.DateFormat.format("MMM dd, yyyy - hh:mm a", task.dueDate)}",
-                notificationTimeMs
-            )
+    private fun scheduleNotificationForTask(task: Task, reminderMinutes: Int = REMINDER_1_HOUR) {
+        // Calculate notification time
+        val notificationTime = task.dueDate.time - (reminderMinutes * 60 * 1000)
+
+        // Only schedule if the notification time is in the future
+        if (notificationTime > System.currentTimeMillis()) {
+            notificationHelper.scheduleTaskNotification(task, reminderMinutes)
         }
     }
 
@@ -339,14 +307,8 @@ class NotificationsFragment : Fragment() {
         findNavController().navigate(action)
     }
 
-    private fun showLoading(isLoading: Boolean) {
-        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Refresh tasks when returning to this fragment
-        loadTasksWithReminders()
+    private fun showLoading(show: Boolean) {
+        binding.progressBar.visibility = if (show) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() {

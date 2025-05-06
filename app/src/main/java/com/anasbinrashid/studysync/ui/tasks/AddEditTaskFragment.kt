@@ -16,6 +16,7 @@ import com.anasbinrashid.studysync.databinding.FragmentAddEditTaskBinding
 import com.anasbinrashid.studysync.model.Course
 import com.anasbinrashid.studysync.model.Task
 import com.anasbinrashid.studysync.util.DatabaseHelper
+import com.anasbinrashid.studysync.util.NotificationHelper
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -426,6 +427,17 @@ class AddEditTaskFragment : Fragment() {
                 .document(updatedTask.id)
                 .set(updatedTask)
                 .addOnSuccessListener {
+                    // Show notification for task update
+                    val notificationHelper = NotificationHelper(requireContext())
+                    val dateFormat = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault())
+                    val dueTimeStr = dateFormat.format(updatedTask.dueDate)
+                    
+                    notificationHelper.showLocalNotification(
+                        updatedTask.id.hashCode(),
+                        "Task Updated: ${updatedTask.title}",
+                        "${updatedTask.courseName} - Due $dueTimeStr"
+                    )
+
                     Toast.makeText(requireContext(), "Task updated successfully", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }
@@ -461,6 +473,23 @@ class AddEditTaskFragment : Fragment() {
                 .document(newTask.id)
                 .set(newTask)
                 .addOnSuccessListener {
+                    // Show notification for new task
+                    val notificationHelper = NotificationHelper(requireContext())
+                    val dateFormat = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault())
+                    val dueTimeStr = dateFormat.format(newTask.dueDate)
+                    
+                    // Show immediate notification
+                    notificationHelper.showLocalNotification(
+                        newTask.id.hashCode(),
+                        "New Task Added: ${newTask.title}",
+                        "${newTask.courseName} - Due $dueTimeStr"
+                    )
+
+                    // Schedule reminder notification if enabled
+                    if (newTask.reminderSet) {
+                        notificationHelper.scheduleTaskNotification(newTask, 60) // 60 minutes before due time
+                    }
+
                     Toast.makeText(requireContext(), "Task added successfully", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }
@@ -495,6 +524,14 @@ class AddEditTaskFragment : Fragment() {
                 .document(taskId)
                 .delete()
                 .addOnSuccessListener {
+                    // Show notification for task deletion
+                    val notificationHelper = NotificationHelper(requireContext())
+                    notificationHelper.showLocalNotification(
+                        taskId.hashCode(),
+                        "Task Deleted: ${currentTask!!.title}",
+                        "Task has been removed from ${currentTask!!.courseName}"
+                    )
+
                     Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }

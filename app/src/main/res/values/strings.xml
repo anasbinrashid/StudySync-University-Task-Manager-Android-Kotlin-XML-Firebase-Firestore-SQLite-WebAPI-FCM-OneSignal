@@ -20,7 +20,7 @@
     <string name="confirm_password">Confirm Password</string>
     <string name="university">University</string>
     <string name="current_semester">Current Semester</string>
-
+    <string name="default_notification_channel_id">university_task_manager_channel</string>
     <!-- Navigation -->
     <string name="dashboard">Dashboard</string>
     <string name="tasks">Tasks</string>
