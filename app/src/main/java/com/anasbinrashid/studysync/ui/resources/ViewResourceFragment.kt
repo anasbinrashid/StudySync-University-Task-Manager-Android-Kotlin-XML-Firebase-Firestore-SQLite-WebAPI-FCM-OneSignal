@@ -28,6 +28,7 @@ class ViewResourceFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
     private lateinit var dbHelper: DatabaseHelper
+    private var currentResource: Resource? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View
     {
@@ -54,6 +55,78 @@ class ViewResourceFragment : Fragment() {
         binding.toolbar.setNavigationOnClickListener {
             findNavController().navigateUp()
         }
+
+        // Add delete menu item
+        binding.toolbar.inflateMenu(R.menu.menu_view_resource)
+        binding.toolbar.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.action_delete -> {
+                    showDeleteConfirmation()
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun showDeleteConfirmation() {
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Delete Resource")
+            .setMessage("Are you sure you want to delete this resource? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                deleteResource()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun deleteResource() {
+        showLoading(true)
+        currentResource?.let { resource ->
+            try {
+                // Delete from local database
+                dbHelper.deleteResource(resource.id)
+
+                // Delete associated files
+                deleteResourceFiles(resource)
+
+                // Delete from Firestore
+                db.collection("resources")
+                    .document(resource.id)
+                    .delete()
+                    .addOnSuccessListener {
+                        showLoading(false)
+                        Toast.makeText(requireContext(), "Resource deleted successfully", Toast.LENGTH_SHORT).show()
+                        findNavController().navigateUp()
+                    }
+                    .addOnFailureListener { e ->
+                        showLoading(false)
+                        // Even if Firestore deletion fails, we've deleted locally
+                        Toast.makeText(requireContext(), "Resource deleted locally", Toast.LENGTH_SHORT).show()
+                        findNavController().navigateUp()
+                    }
+            } catch (e: Exception) {
+                showLoading(false)
+                showError("Error deleting resource: ${e.message}")
+            }
+        }
+    }
+
+    private fun deleteResourceFiles(resource: Resource) {
+        try {
+            // Delete main file
+            resource.filePath?.let { path ->
+                File(path).delete()
+            }
+
+            // Delete thumbnail if exists
+            resource.thumbnailPath?.let { path ->
+                File(path).delete()
+            }
+        } catch (e: Exception) {
+            // Log error but continue with deletion
+            e.printStackTrace()
+        }
     }
 
     private fun loadResourceDetails() {
@@ -63,6 +136,7 @@ class ViewResourceFragment : Fragment() {
         val resource = dbHelper.getResourceById(args.resourceId)
 
         if (resource != null) {
+            currentResource = resource
             populateUI(resource)
             showLoading(false)
         } else {
@@ -77,6 +151,7 @@ class ViewResourceFragment : Fragment() {
                         if (resource != null) {
                             // Save to local database
                             dbHelper.addResource(resource)
+                            currentResource = resource
                             populateUI(resource)
                         } else {
                             showError("Failed to load resource")

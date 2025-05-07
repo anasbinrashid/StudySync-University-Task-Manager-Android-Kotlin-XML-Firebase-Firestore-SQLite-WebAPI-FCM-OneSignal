@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout >
+<layout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".ui.settings.SettingsFragment">
@@ -273,14 +272,14 @@
                             app:layout_constraintTop_toTopOf="@+id/tv_notifications_label" />
 
 
-
                         <View
                             android:id="@+id/divider_6"
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
                             android:layout_marginTop="16dp"
                             android:background="@color/divider"
-                            app:layout_constraintTop_toBottomOf="@+id/tv_notifications_label" />
+                            app:layout_constraintTop_toBottomOf="@+id/tv_notifications_label"
+                            tools:layout_editor_absoluteX="-4dp" />
 
                         <TextView
                             android:id="@+id/tv_sync_label"
@@ -373,7 +372,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="16dp"
-                            android:text="Developed by: Hasnain Akhtar &amp; Anas bin Rashid"
+                            android:text="Developed by: Hasnain Akhtar &amp; Anas Bin Rashid"
                             android:textSize="16sp"
                             app:layout_constraintTop_toBottomOf="@+id/divider_7" />
 
