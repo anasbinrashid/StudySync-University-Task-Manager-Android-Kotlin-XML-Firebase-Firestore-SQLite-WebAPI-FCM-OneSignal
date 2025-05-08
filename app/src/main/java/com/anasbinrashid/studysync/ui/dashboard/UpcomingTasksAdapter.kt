@@ -58,12 +58,12 @@ class UpcomingTasksAdapter : ListAdapter<Task, UpcomingTasksAdapter.TaskViewHold
 
             // Calculate days remaining
             val currentTime = System.currentTimeMillis()
-            val dueTime = task.dueDate.time
-            val diffInMillis = dueTime - currentTime
-            val diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis)
+            val dueTime = task.dueDate?.time
+            val diffInMillis = dueTime?.minus(currentTime)
+            val diffInDays = diffInMillis?.let { TimeUnit.MILLISECONDS.toDays(it) }
 
             val daysText = when {
-                diffInDays < 0 -> "Overdue!"
+                diffInDays!! < 0 -> "Overdue!"
                 diffInDays == 0L -> "Due today!"
                 diffInDays == 1L -> "Due tomorrow"
                 else -> "$diffInDays days left"

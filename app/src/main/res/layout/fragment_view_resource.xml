@@ -16,8 +16,10 @@
                 android:background="?attr/colorPrimary"
                 android:elevation="4dp"
                 android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+                app:popupTheme="@style/ToolbarPopupTheme"
                 app:navigationIcon="@drawable/ic_back"
-                app:title="Resource Details" />
+                app:title="Resource Details"
+                />
 
         </com.google.android.material.appbar.AppBarLayout>
 

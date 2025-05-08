@@ -52,7 +52,7 @@ class BootReceiver : BroadcastReceiver() {
                 var rescheduledCount = 0
                 // Reschedule notifications for upcoming tasks with reminders
                 for (task in tasks) {
-                    if (task.reminderSet && task.status != 2 && task.dueDate.time > currentTime) {
+                    if (task.reminderSet && task.status != 2 && task.dueDate?.time!! > currentTime) {
                         notificationHelper.scheduleTaskNotification(task, reminderTime)
                         rescheduledCount++
                     }

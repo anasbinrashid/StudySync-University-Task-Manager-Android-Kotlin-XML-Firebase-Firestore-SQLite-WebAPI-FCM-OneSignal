@@ -1,5 +1,6 @@
 package com.anasbinrashid.studysync.ui.dashboard
 
+import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -94,6 +95,7 @@ class DashboardFragment : Fragment() {
         setupPieChart()
     }
 
+    @SuppressLint("SetTextI18n")
     private fun loadDashboardData() {
         val currentUser = auth.currentUser
 

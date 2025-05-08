@@ -178,7 +178,7 @@ class NotificationsFragment : Fragment() {
         for (task in allTasks) {
             if (task.status == 2) { // Completed tasks
                 completedTasks.add(task)
-            } else if (task.dueDate.time > currentTime) { // Upcoming tasks
+            } else if (task.dueDate?.time!! > currentTime) { // Upcoming tasks
                 reminderTasks.add(task)
             }
         }
@@ -294,11 +294,13 @@ class NotificationsFragment : Fragment() {
 
     private fun scheduleNotificationForTask(task: Task, reminderMinutes: Int = REMINDER_1_HOUR) {
         // Calculate notification time
-        val notificationTime = task.dueDate.time - (reminderMinutes * 60 * 1000)
+        val notificationTime = (task.dueDate?.time)?.minus((reminderMinutes * 60 * 1000))
 
         // Only schedule if the notification time is in the future
-        if (notificationTime > System.currentTimeMillis()) {
-            notificationHelper.scheduleTaskNotification(task, reminderMinutes)
+        if (notificationTime != null) {
+            if (notificationTime > System.currentTimeMillis()) {
+                notificationHelper.scheduleTaskNotification(task, reminderMinutes)
+            }
         }
     }
 

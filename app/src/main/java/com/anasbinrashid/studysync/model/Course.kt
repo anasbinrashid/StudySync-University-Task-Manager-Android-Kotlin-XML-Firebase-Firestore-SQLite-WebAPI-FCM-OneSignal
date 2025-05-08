@@ -1,5 +1,7 @@
 package com.anasbinrashid.studysync.model
 
+import java.util.Date
+
 data class Course(
     val id: String = "",
     val userId: String = "",
@@ -14,5 +16,6 @@ data class Course(
     val semester: String = "",
     val creditHours: Int = 0,
     val color: Int = 0,  // Color representation for UI
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val lastModified: Date = Date()
 )

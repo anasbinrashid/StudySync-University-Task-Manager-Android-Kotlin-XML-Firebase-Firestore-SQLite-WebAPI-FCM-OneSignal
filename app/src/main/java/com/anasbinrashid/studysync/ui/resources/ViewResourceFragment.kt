@@ -172,7 +172,7 @@ class ViewResourceFragment : Fragment() {
         binding.tvCourseInfo.text = "Course: ${resource.courseName}"
 
         // Set tags
-        binding.tvTags.text = resource.tags.joinToString(", ")
+        // binding.tvTags.text = resource.tags.joinToString(", ")
 
         // Show content based on resource type
         when (resource.type) {
@@ -188,7 +188,6 @@ class ViewResourceFragment : Fragment() {
         binding.layoutImageContent.visibility = View.GONE
         binding.layoutDocumentContent.visibility = View.GONE
         binding.layoutLinkContent.visibility = View.GONE
-
         binding.tvNoteContent.text = resource.filePath
     }
 

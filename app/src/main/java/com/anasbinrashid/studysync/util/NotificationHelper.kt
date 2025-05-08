@@ -123,32 +123,36 @@ class NotificationHelper(private val context: Context) {
 
         // Don't schedule if the due date has passed
         val currentTime = System.currentTimeMillis()
-        if (task.dueDate.time <= currentTime) return
+        if (task.dueDate?.time!! <= currentTime) return
 
         // Calculate notification time
-        val notificationTimeMs = task.dueDate.time - (reminderMinutes * 60 * 1000)
+        val notificationTimeMs = (task.dueDate?.time )?.minus((reminderMinutes * 60 * 1000))
 
         // Only schedule if notification time is in the future
-        if (notificationTimeMs > currentTime) {
-            // Format date string
-            val dateFormat = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault())
-            val dueTimeStr = dateFormat.format(task.dueDate)
+        if (notificationTimeMs != null) {
+            if (notificationTimeMs > currentTime) {
+                // Format date string
+                val dateFormat = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault())
+                val dueTimeStr = dateFormat.format(task.dueDate)
 
-            // Schedule local notification
-            scheduleLocalNotification(
-                task.id.hashCode(),
-                task.title,
-                "${task.courseName} - Due $dueTimeStr",
-                notificationTimeMs
-            )
+                // Schedule local notification
+                if (notificationTimeMs != null) {
+                    scheduleLocalNotification(
+                        task.id.hashCode(),
+                        task.title,
+                        "${task.courseName} - Due $dueTimeStr",
+                        notificationTimeMs
+                    )
+                }
 
-            // Schedule cloud notification
-            scheduleCloudNotification(
-                task.id,
-                task.title,
-                "${task.courseName} - Due $dueTimeStr",
-                notificationTimeMs
-            )
+                // Schedule cloud notification
+                scheduleCloudNotification(
+                    task.id,
+                    task.title,
+                    "${task.courseName} - Due $dueTimeStr",
+                    notificationTimeMs
+                )
+            }
         }
     }
 

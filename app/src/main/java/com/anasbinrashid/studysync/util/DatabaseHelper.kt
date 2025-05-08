@@ -16,7 +16,7 @@ class DatabaseHelper(context: Context) :
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
-        private const val DATABASE_NAME = "university_task_manager.db"
+        private const val DATABASE_NAME = "studysync.db"
         private const val DATABASE_VERSION = 1
 
         // Table names
@@ -29,6 +29,7 @@ class DatabaseHelper(context: Context) :
         private const val KEY_ID = "id"
         private const val KEY_USER_ID = "user_id"
         private const val KEY_IS_SYNCED = "is_synced"
+        private const val KEY_LAST_MODIFIED = "last_modified"
 
         // User table columns
         private const val KEY_NAME = "name"
@@ -84,19 +85,19 @@ class DatabaseHelper(context: Context) :
         val createTasksTable = """
             CREATE TABLE $TABLE_TASKS (
                 $KEY_ID TEXT PRIMARY KEY,
-                $KEY_USER_ID TEXT,
-                $KEY_TITLE TEXT,
+                $KEY_USER_ID TEXT NOT NULL,
+                $KEY_TITLE TEXT NOT NULL,
                 $KEY_DESCRIPTION TEXT,
                 $KEY_COURSE_ID TEXT,
                 $KEY_COURSE_NAME TEXT,
-                $KEY_DUE_DATE TEXT,
-                $KEY_PRIORITY INTEGER,
-                $KEY_STATUS INTEGER,
-                $KEY_TYPE INTEGER,
-                $KEY_REMINDER_SET INTEGER,
-                $KEY_GRADE REAL,
-                $KEY_IS_SYNCED INTEGER,
-                $KEY_LAST_UPDATED TEXT
+                $KEY_DUE_DATE INTEGER,
+                $KEY_PRIORITY INTEGER DEFAULT 0,
+                $KEY_STATUS INTEGER DEFAULT 0,
+                $KEY_TYPE INTEGER DEFAULT 0,
+                $KEY_REMINDER_SET INTEGER DEFAULT 0,
+                $KEY_GRADE REAL DEFAULT 0,
+                $KEY_IS_SYNCED INTEGER DEFAULT 0,
+                $KEY_LAST_UPDATED INTEGER NOT NULL
             )
         """.trimIndent()
 
@@ -104,8 +105,8 @@ class DatabaseHelper(context: Context) :
         val createCoursesTable = """
             CREATE TABLE $TABLE_COURSES (
                 $KEY_ID TEXT PRIMARY KEY,
-                $KEY_USER_ID TEXT,
-                $KEY_NAME TEXT,
+                $KEY_USER_ID TEXT NOT NULL,
+                $KEY_NAME TEXT NOT NULL,
                 $KEY_CODE TEXT,
                 $KEY_INSTRUCTOR_NAME TEXT,
                 $KEY_INSTRUCTOR_EMAIL TEXT,
@@ -114,9 +115,10 @@ class DatabaseHelper(context: Context) :
                 $KEY_START_TIME TEXT,
                 $KEY_END_TIME TEXT,
                 $KEY_SEMESTER TEXT,
-                $KEY_CREDIT_HOURS INTEGER,
-                $KEY_COLOR INTEGER,
-                $KEY_IS_SYNCED INTEGER
+                $KEY_CREDIT_HOURS INTEGER DEFAULT 0,
+                $KEY_COLOR INTEGER DEFAULT 0,
+                $KEY_IS_SYNCED INTEGER DEFAULT 0,
+                $KEY_LAST_MODIFIED INTEGER NOT NULL
             )
         """.trimIndent()
 
@@ -124,17 +126,17 @@ class DatabaseHelper(context: Context) :
         val createResourcesTable = """
             CREATE TABLE $TABLE_RESOURCES (
                 $KEY_ID TEXT PRIMARY KEY,
-                $KEY_USER_ID TEXT,
-                $KEY_TITLE TEXT,
+                $KEY_USER_ID TEXT NOT NULL,
+                $KEY_TITLE TEXT NOT NULL,
                 $KEY_DESCRIPTION TEXT,
                 $KEY_COURSE_ID TEXT,
                 $KEY_COURSE_NAME TEXT,
-                $KEY_TYPE INTEGER,
+                $KEY_TYPE INTEGER DEFAULT 0,
                 $KEY_FILE_PATH TEXT,
                 $KEY_TAGS TEXT,
-                $KEY_DATE_ADDED TEXT,
-                $KEY_LAST_UPDATED TEXT,
-                $KEY_IS_SYNCED INTEGER,
+                $KEY_DATE_ADDED INTEGER NOT NULL,
+                $KEY_LAST_UPDATED INTEGER NOT NULL,
+                $KEY_IS_SYNCED INTEGER DEFAULT 0,
                 $KEY_THUMBNAIL_PATH TEXT
             )
         """.trimIndent()
@@ -223,8 +225,6 @@ class DatabaseHelper(context: Context) :
     // Task CRUD operations
     fun addTask(task: Task): Long {
         val db = this.writableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-
         val values = ContentValues().apply {
             put(KEY_ID, task.id)
             put(KEY_USER_ID, task.userId)
@@ -232,17 +232,17 @@ class DatabaseHelper(context: Context) :
             put(KEY_DESCRIPTION, task.description)
             put(KEY_COURSE_ID, task.courseId)
             put(KEY_COURSE_NAME, task.courseName)
-            put(KEY_DUE_DATE, dateFormat.format(task.dueDate))
+            put(KEY_DUE_DATE, task.dueDate?.time)
             put(KEY_PRIORITY, task.priority)
             put(KEY_STATUS, task.status)
             put(KEY_TYPE, task.type)
             put(KEY_REMINDER_SET, if (task.reminderSet) 1 else 0)
             put(KEY_GRADE, task.grade)
             put(KEY_IS_SYNCED, if (task.isSynced) 1 else 0)
-            put(KEY_LAST_UPDATED, dateFormat.format(task.lastUpdated))
+            put(KEY_LAST_UPDATED, task.lastUpdated.time)
         }
 
-        val result = db.insert(TABLE_TASKS, null, values)
+        val result = db.insertWithOnConflict(TABLE_TASKS, null, values, SQLiteDatabase.CONFLICT_REPLACE)
         db.close()
         return result
     }
@@ -250,7 +250,6 @@ class DatabaseHelper(context: Context) :
     fun getTasksForUser(userId: String): List<Task> {
         val taskList = mutableListOf<Task>()
         val db = this.readableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
         val cursor = db.query(
             TABLE_TASKS,
@@ -271,14 +270,14 @@ class DatabaseHelper(context: Context) :
                     description = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DESCRIPTION)),
                     courseId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_ID)),
                     courseName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_NAME)),
-                    dueDate = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DUE_DATE))) ?: Date(),
+                    dueDate = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DUE_DATE)).let { if (it > 0) Date(it) else null },
                     priority = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_PRIORITY)),
                     status = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_STATUS)),
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     reminderSet = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REMINDER_SET)) == 1,
                     grade = cursor.getFloat(cursor.getColumnIndexOrThrow(KEY_GRADE)),
                     isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
-                    lastUpdated = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date()
+                    lastUpdated = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED)))
                 )
                 taskList.add(task)
             } while (cursor.moveToNext())
@@ -291,7 +290,6 @@ class DatabaseHelper(context: Context) :
     fun getTaskById(taskId: String): Task? {
         val db = this.readableDatabase
         var task: Task? = null
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
         val cursor = db.query(
             TABLE_TASKS,
@@ -311,14 +309,14 @@ class DatabaseHelper(context: Context) :
                 description = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DESCRIPTION)),
                 courseId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_ID)),
                 courseName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_NAME)),
-                dueDate = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DUE_DATE))) ?: Date(),
+                dueDate = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DUE_DATE)).let { if (it > 0) Date(it) else null },
                 priority = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_PRIORITY)),
                 status = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_STATUS)),
                 type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                 reminderSet = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REMINDER_SET)) == 1,
                 grade = cursor.getFloat(cursor.getColumnIndexOrThrow(KEY_GRADE)),
                 isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
-                lastUpdated = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date()
+                lastUpdated = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED)))
             )
         }
 
@@ -328,21 +326,19 @@ class DatabaseHelper(context: Context) :
 
     fun updateTask(task: Task): Int {
         val db = this.writableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-
         val values = ContentValues().apply {
             put(KEY_TITLE, task.title)
             put(KEY_DESCRIPTION, task.description)
             put(KEY_COURSE_ID, task.courseId)
             put(KEY_COURSE_NAME, task.courseName)
-            put(KEY_DUE_DATE, dateFormat.format(task.dueDate))
+            put(KEY_DUE_DATE, task.dueDate?.time)
             put(KEY_PRIORITY, task.priority)
             put(KEY_STATUS, task.status)
             put(KEY_TYPE, task.type)
             put(KEY_REMINDER_SET, if (task.reminderSet) 1 else 0)
             put(KEY_GRADE, task.grade)
             put(KEY_IS_SYNCED, if (task.isSynced) 1 else 0)
-            put(KEY_LAST_UPDATED, dateFormat.format(task.lastUpdated))
+            put(KEY_LAST_UPDATED, task.lastUpdated.time)
         }
 
         val result = db.update(
@@ -370,7 +366,6 @@ class DatabaseHelper(context: Context) :
     fun getTasksForCourse(courseId: String): List<Task> {
         val taskList = mutableListOf<Task>()
         val db = this.readableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
         val cursor = db.query(
             TABLE_TASKS,
@@ -391,14 +386,14 @@ class DatabaseHelper(context: Context) :
                     description = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DESCRIPTION)),
                     courseId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_ID)),
                     courseName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_NAME)),
-                    dueDate = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DUE_DATE))) ?: Date(),
+                    dueDate = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DUE_DATE)).let { if (it > 0) Date(it) else null },
                     priority = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_PRIORITY)),
                     status = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_STATUS)),
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     reminderSet = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REMINDER_SET)) == 1,
                     grade = cursor.getFloat(cursor.getColumnIndexOrThrow(KEY_GRADE)),
                     isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
-                    lastUpdated = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date()
+                    lastUpdated = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED)))
                 )
                 taskList.add(task)
             } while (cursor.moveToNext())
@@ -411,7 +406,6 @@ class DatabaseHelper(context: Context) :
     // Course CRUD operations
     fun addCourse(course: Course): Long {
         val db = this.writableDatabase
-
         val values = ContentValues().apply {
             put(KEY_ID, course.id)
             put(KEY_USER_ID, course.userId)
@@ -427,9 +421,10 @@ class DatabaseHelper(context: Context) :
             put(KEY_CREDIT_HOURS, course.creditHours)
             put(KEY_COLOR, course.color)
             put(KEY_IS_SYNCED, if (course.isSynced) 1 else 0)
+            put(KEY_LAST_MODIFIED, course.lastModified.time)
         }
 
-        val result = db.insert(TABLE_COURSES, null, values)
+        val result = db.insertWithOnConflict(TABLE_COURSES, null, values, SQLiteDatabase.CONFLICT_REPLACE)
         db.close()
         return result
     }
@@ -450,9 +445,6 @@ class DatabaseHelper(context: Context) :
 
         if (cursor.moveToFirst()) {
             do {
-                val daysString = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DAY_OF_WEEK))
-                val days = daysString.split(",").map { it.toInt() }
-
                 val course = Course(
                     id = cursor.getString(cursor.getColumnIndexOrThrow(KEY_ID)),
                     userId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_ID)),
@@ -461,13 +453,16 @@ class DatabaseHelper(context: Context) :
                     instructorName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_INSTRUCTOR_NAME)),
                     instructorEmail = cursor.getString(cursor.getColumnIndexOrThrow(KEY_INSTRUCTOR_EMAIL)),
                     room = cursor.getString(cursor.getColumnIndexOrThrow(KEY_ROOM)),
-                    dayOfWeek = days,
+                    dayOfWeek = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DAY_OF_WEEK))
+                        .split(",")
+                        .map { it.toInt() },
                     startTime = cursor.getString(cursor.getColumnIndexOrThrow(KEY_START_TIME)),
                     endTime = cursor.getString(cursor.getColumnIndexOrThrow(KEY_END_TIME)),
                     semester = cursor.getString(cursor.getColumnIndexOrThrow(KEY_SEMESTER)),
                     creditHours = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_CREDIT_HOURS)),
                     color = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_COLOR)),
-                    isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1
+                    isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
+                    lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_MODIFIED)))
                 )
                 courseList.add(course)
             } while (cursor.moveToNext())
@@ -492,9 +487,6 @@ class DatabaseHelper(context: Context) :
         )
 
         if (cursor.moveToFirst()) {
-            val daysString = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DAY_OF_WEEK))
-            val days = daysString.split(",").map { it.toInt() }
-
             course = Course(
                 id = cursor.getString(cursor.getColumnIndexOrThrow(KEY_ID)),
                 userId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_ID)),
@@ -503,13 +495,16 @@ class DatabaseHelper(context: Context) :
                 instructorName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_INSTRUCTOR_NAME)),
                 instructorEmail = cursor.getString(cursor.getColumnIndexOrThrow(KEY_INSTRUCTOR_EMAIL)),
                 room = cursor.getString(cursor.getColumnIndexOrThrow(KEY_ROOM)),
-                dayOfWeek = days,
+                dayOfWeek = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DAY_OF_WEEK))
+                    .split(",")
+                    .map { it.toInt() },
                 startTime = cursor.getString(cursor.getColumnIndexOrThrow(KEY_START_TIME)),
                 endTime = cursor.getString(cursor.getColumnIndexOrThrow(KEY_END_TIME)),
                 semester = cursor.getString(cursor.getColumnIndexOrThrow(KEY_SEMESTER)),
                 creditHours = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_CREDIT_HOURS)),
                 color = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_COLOR)),
-                isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1
+                isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
+                lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_MODIFIED)))
             )
         }
 
@@ -519,7 +514,6 @@ class DatabaseHelper(context: Context) :
 
     fun updateCourse(course: Course): Int {
         val db = this.writableDatabase
-
         val values = ContentValues().apply {
             put(KEY_NAME, course.name)
             put(KEY_CODE, course.code)
@@ -533,6 +527,7 @@ class DatabaseHelper(context: Context) :
             put(KEY_CREDIT_HOURS, course.creditHours)
             put(KEY_COLOR, course.color)
             put(KEY_IS_SYNCED, if (course.isSynced) 1 else 0)
+            put(KEY_LAST_MODIFIED, course.lastModified.time)
         }
 
         val result = db.update(
@@ -548,28 +543,11 @@ class DatabaseHelper(context: Context) :
 
     fun deleteCourse(courseId: String): Int {
         val db = this.writableDatabase
-
-        // First delete all tasks associated with this course
-        db.delete(
-            TABLE_TASKS,
-            "$KEY_COURSE_ID = ?",
-            arrayOf(courseId)
-        )
-
-        // Then delete all resources associated with this course
-        db.delete(
-            TABLE_RESOURCES,
-            "$KEY_COURSE_ID = ?",
-            arrayOf(courseId)
-        )
-
-        // Finally delete the course
         val result = db.delete(
             TABLE_COURSES,
             "$KEY_ID = ?",
             arrayOf(courseId)
         )
-
         db.close()
         return result
     }
@@ -577,8 +555,6 @@ class DatabaseHelper(context: Context) :
     // Resource CRUD operations
     fun addResource(resource: Resource): Long {
         val db = this.writableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-
         val values = ContentValues().apply {
             put(KEY_ID, resource.id)
             put(KEY_USER_ID, resource.userId)
@@ -589,13 +565,13 @@ class DatabaseHelper(context: Context) :
             put(KEY_TYPE, resource.type)
             put(KEY_FILE_PATH, resource.filePath)
             put(KEY_TAGS, resource.tags.joinToString(","))
-            put(KEY_DATE_ADDED, dateFormat.format(resource.dateAdded))
-            put(KEY_LAST_UPDATED, dateFormat.format(resource.lastModified))
+            put(KEY_DATE_ADDED, resource.dateAdded.time)
+            put(KEY_LAST_UPDATED, resource.lastModified.time)
             put(KEY_IS_SYNCED, if (resource.isSynced) 1 else 0)
             put(KEY_THUMBNAIL_PATH, resource.thumbnailPath)
         }
 
-        val result = db.insert(TABLE_RESOURCES, null, values)
+        val result = db.insertWithOnConflict(TABLE_RESOURCES, null, values, SQLiteDatabase.CONFLICT_REPLACE)
         db.close()
         return result
     }
@@ -603,7 +579,6 @@ class DatabaseHelper(context: Context) :
     fun getResourcesForUser(userId: String): List<Resource> {
         val resourceList = mutableListOf<Resource>()
         val db = this.readableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
         val cursor = db.query(
             TABLE_RESOURCES,
@@ -617,9 +592,6 @@ class DatabaseHelper(context: Context) :
 
         if (cursor.moveToFirst()) {
             do {
-                val tagsString = cursor.getString(cursor.getColumnIndexOrThrow(KEY_TAGS))
-                val tags = if (tagsString.isNotEmpty()) tagsString.split(",") else listOf()
-
                 val resource = Resource(
                     id = cursor.getString(cursor.getColumnIndexOrThrow(KEY_ID)),
                     userId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_ID)),
@@ -629,9 +601,11 @@ class DatabaseHelper(context: Context) :
                     courseName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_NAME)),
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     filePath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_FILE_PATH)),
-                    tags = tags,
-                    dateAdded = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))) ?: Date(),
-                    lastModified = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date(),
+                    tags = cursor.getString(cursor.getColumnIndexOrThrow(KEY_TAGS))
+                        .split(",")
+                        .filter { it.isNotEmpty() },
+                    dateAdded = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))),
+                    lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))),
                     isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
                     thumbnailPath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_THUMBNAIL_PATH))
                 )
@@ -646,7 +620,6 @@ class DatabaseHelper(context: Context) :
     fun getResourceById(resourceId: String): Resource? {
         val db = this.readableDatabase
         var resource: Resource? = null
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
         val cursor = db.query(
             TABLE_RESOURCES,
@@ -659,9 +632,6 @@ class DatabaseHelper(context: Context) :
         )
 
         if (cursor.moveToFirst()) {
-            val tagsString = cursor.getString(cursor.getColumnIndexOrThrow(KEY_TAGS))
-            val tags = if (tagsString.isNotEmpty()) tagsString.split(",") else listOf()
-
             resource = Resource(
                 id = cursor.getString(cursor.getColumnIndexOrThrow(KEY_ID)),
                 userId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_ID)),
@@ -671,9 +641,11 @@ class DatabaseHelper(context: Context) :
                 courseName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_NAME)),
                 type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                 filePath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_FILE_PATH)),
-                tags = tags,
-                dateAdded = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))) ?: Date(),
-                lastModified = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date(),
+                tags = cursor.getString(cursor.getColumnIndexOrThrow(KEY_TAGS))
+                    .split(",")
+                    .filter { it.isNotEmpty() },
+                dateAdded = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))),
+                lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))),
                 isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
                 thumbnailPath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_THUMBNAIL_PATH))
             )
@@ -685,8 +657,6 @@ class DatabaseHelper(context: Context) :
 
     fun updateResource(resource: Resource): Int {
         val db = this.writableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-
         val values = ContentValues().apply {
             put(KEY_TITLE, resource.title)
             put(KEY_DESCRIPTION, resource.description)
@@ -695,7 +665,7 @@ class DatabaseHelper(context: Context) :
             put(KEY_TYPE, resource.type)
             put(KEY_FILE_PATH, resource.filePath)
             put(KEY_TAGS, resource.tags.joinToString(","))
-            put(KEY_LAST_UPDATED, dateFormat.format(resource.lastModified))
+            put(KEY_LAST_UPDATED, resource.lastModified.time)
             put(KEY_IS_SYNCED, if (resource.isSynced) 1 else 0)
             put(KEY_THUMBNAIL_PATH, resource.thumbnailPath)
         }
@@ -725,7 +695,6 @@ class DatabaseHelper(context: Context) :
     fun getResourcesForCourse(courseId: String): List<Resource> {
         val resourceList = mutableListOf<Resource>()
         val db = this.readableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
         val cursor = db.query(
             TABLE_RESOURCES,
@@ -739,9 +708,6 @@ class DatabaseHelper(context: Context) :
 
         if (cursor.moveToFirst()) {
             do {
-                val tagsString = cursor.getString(cursor.getColumnIndexOrThrow(KEY_TAGS))
-                val tags = if (tagsString.isNotEmpty()) tagsString.split(",") else listOf()
-
                 val resource = Resource(
                     id = cursor.getString(cursor.getColumnIndexOrThrow(KEY_ID)),
                     userId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_ID)),
@@ -751,9 +717,11 @@ class DatabaseHelper(context: Context) :
                     courseName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_NAME)),
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     filePath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_FILE_PATH)),
-                    tags = tags,
-                    dateAdded = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))) ?: Date(),
-                    lastModified = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date(),
+                    tags = cursor.getString(cursor.getColumnIndexOrThrow(KEY_TAGS))
+                        .split(",")
+                        .filter { it.isNotEmpty() },
+                    dateAdded = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))),
+                    lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))),
                     isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
                     thumbnailPath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_THUMBNAIL_PATH))
                 )
@@ -790,14 +758,14 @@ class DatabaseHelper(context: Context) :
                     description = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DESCRIPTION)),
                     courseId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_ID)),
                     courseName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_NAME)),
-                    dueDate = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DUE_DATE))) ?: Date(),
+                    dueDate = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DUE_DATE)).let { if (it > 0) Date(it) else null },
                     priority = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_PRIORITY)),
                     status = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_STATUS)),
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     reminderSet = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REMINDER_SET)) == 1,
                     grade = cursor.getFloat(cursor.getColumnIndexOrThrow(KEY_GRADE)),
                     isSynced = false,
-                    lastUpdated = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date()
+                    lastUpdated = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED)))
                 )
                 taskList.add(task)
             } while (cursor.moveToNext())
@@ -840,7 +808,8 @@ class DatabaseHelper(context: Context) :
                     semester = cursor.getString(cursor.getColumnIndexOrThrow(KEY_SEMESTER)),
                     creditHours = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_CREDIT_HOURS)),
                     color = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_COLOR)),
-                    isSynced = false
+                    isSynced = false,
+                    lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_MODIFIED)))
                 )
                 courseList.add(course)
             } while (cursor.moveToNext())
@@ -880,8 +849,8 @@ class DatabaseHelper(context: Context) :
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     filePath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_FILE_PATH)),
                     tags = tags,
-                    dateAdded = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))) ?: Date(),
-                    lastModified = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date(),
+                    dateAdded = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))),
+                    lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))),
                     isSynced = false,
                     thumbnailPath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_THUMBNAIL_PATH))
                 )
@@ -943,16 +912,16 @@ class DatabaseHelper(context: Context) :
 
     // Dashboard related queries
     fun getUpcomingTasksCount(userId: String): Int {
+
         val db = this.readableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        val currentDate = dateFormat.format(Date())
+        val currentTimeMillis = System.currentTimeMillis()
 
         val query = """
-            SELECT COUNT(*) FROM $TABLE_TASKS 
-            WHERE $KEY_USER_ID = ? AND $KEY_STATUS != 2 AND $KEY_DUE_DATE > ?
-        """.trimIndent()
+        SELECT COUNT(*) FROM $TABLE_TASKS 
+        WHERE $KEY_USER_ID = ? AND $KEY_STATUS != 2 AND $KEY_DUE_DATE > ?
+    """.trimIndent()
 
-        val cursor = db.rawQuery(query, arrayOf(userId, currentDate))
+        val cursor = db.rawQuery(query, arrayOf(userId, currentTimeMillis.toString()))
         var count = 0
 
         if (cursor.moveToFirst()) {
@@ -994,21 +963,21 @@ class DatabaseHelper(context: Context) :
     }
 
     fun getUpcomingTasks(userId: String, limit: Int): List<Task> {
-        val taskList = mutableListOf<Task>()
+        val tasks = mutableListOf<Task>()
         val db = this.readableDatabase
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        val currentDate = dateFormat.format(Date())
+        val currentTimeMillis = System.currentTimeMillis()
 
         val query = """
-            SELECT * FROM $TABLE_TASKS 
-            WHERE $KEY_USER_ID = ? AND $KEY_STATUS != 2 AND $KEY_DUE_DATE > ? 
-            ORDER BY $KEY_DUE_DATE ASC LIMIT ?
-        """.trimIndent()
+        SELECT * FROM $TABLE_TASKS 
+        WHERE $KEY_USER_ID = ? AND $KEY_STATUS != 2 AND $KEY_DUE_DATE > ? 
+        ORDER BY $KEY_DUE_DATE ASC LIMIT ?
+    """.trimIndent()
 
-        val cursor = db.rawQuery(query, arrayOf(userId, currentDate, limit.toString()))
+        val cursor = db.rawQuery(query, arrayOf(userId, currentTimeMillis.toString(), limit.toString()))
 
         if (cursor.moveToFirst()) {
             do {
+                // Your existing code to convert cursor to Task object
                 val task = Task(
                     id = cursor.getString(cursor.getColumnIndexOrThrow(KEY_ID)),
                     userId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_ID)),
@@ -1016,21 +985,21 @@ class DatabaseHelper(context: Context) :
                     description = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DESCRIPTION)),
                     courseId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_ID)),
                     courseName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_NAME)),
-                    dueDate = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DUE_DATE))) ?: Date(),
+                    dueDate = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DUE_DATE))),
                     priority = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_PRIORITY)),
                     status = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_STATUS)),
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     reminderSet = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REMINDER_SET)) == 1,
                     grade = cursor.getFloat(cursor.getColumnIndexOrThrow(KEY_GRADE)),
                     isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
-                    lastUpdated = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date()
+                    lastUpdated = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED)))
                 )
-                taskList.add(task)
+                tasks.add(task)
             } while (cursor.moveToNext())
         }
 
         cursor.close()
-        return taskList
+        return tasks
     }
 
     fun getRecentResources(userId: String, limit: Int): List<Resource> {
@@ -1061,8 +1030,8 @@ class DatabaseHelper(context: Context) :
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     filePath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_FILE_PATH)),
                     tags = tags,
-                    dateAdded = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))) ?: Date(),
-                    lastModified = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date(),
+                    dateAdded = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))),
+                    lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))),
                     isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
                     thumbnailPath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_THUMBNAIL_PATH))
                 )
@@ -1099,14 +1068,14 @@ class DatabaseHelper(context: Context) :
                     description = cursor.getString(cursor.getColumnIndexOrThrow(KEY_DESCRIPTION)),
                     courseId = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_ID)),
                     courseName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_COURSE_NAME)),
-                    dueDate = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DUE_DATE))) ?: Date(),
+                    dueDate = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DUE_DATE)).let { if (it > 0) Date(it) else null },
                     priority = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_PRIORITY)),
                     status = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_STATUS)),
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     reminderSet = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_REMINDER_SET)) == 1,
                     grade = cursor.getFloat(cursor.getColumnIndexOrThrow(KEY_GRADE)),
                     isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
-                    lastUpdated = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date()
+                    lastUpdated = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED)))
                 )
                 taskList.add(task)
             } while (cursor.moveToNext())
@@ -1149,7 +1118,8 @@ class DatabaseHelper(context: Context) :
                     semester = cursor.getString(cursor.getColumnIndexOrThrow(KEY_SEMESTER)),
                     creditHours = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_CREDIT_HOURS)),
                     color = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_COLOR)),
-                    isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1
+                    isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
+                    lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_MODIFIED)))
                 )
                 courseList.add(course)
             } while (cursor.moveToNext())
@@ -1189,8 +1159,8 @@ class DatabaseHelper(context: Context) :
                     type = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_TYPE)),
                     filePath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_FILE_PATH)),
                     tags = tags,
-                    dateAdded = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))) ?: Date(),
-                    lastModified = dateFormat.parse(cursor.getString(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))) ?: Date(),
+                    dateAdded = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_DATE_ADDED))),
+                    lastModified = Date(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_LAST_UPDATED))),
                     isSynced = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_IS_SYNCED)) == 1,
                     thumbnailPath = cursor.getString(cursor.getColumnIndexOrThrow(KEY_THUMBNAIL_PATH))
                 )

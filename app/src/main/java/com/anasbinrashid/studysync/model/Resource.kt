@@ -7,13 +7,13 @@ data class Resource(
     val userId: String = "",
     val title: String = "",
     val description: String = "",
+    val type: Int = 0, // 0: Note, 1: Image, 2: Document, 3: Link
+    val filePath: String = "",
     val courseId: String = "",
     val courseName: String = "",
-    val type: Int = 0, // 0: Note, 1: Image, 2: Document, 3: Link
-    val filePath: String = "", // Local file path or URL
     val tags: List<String> = listOf(),
     val dateAdded: Date = Date(),
     val lastModified: Date = Date(),
     val isSynced: Boolean = false,
-    val thumbnailPath: String = "" // For images or documents with thumbnails
+    val thumbnailPath: String = ""
 )

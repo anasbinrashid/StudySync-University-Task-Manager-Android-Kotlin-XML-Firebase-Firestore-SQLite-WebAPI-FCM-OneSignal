@@ -189,7 +189,7 @@ class TasksFragment : Fragment() {
                 }.time
 
                 allTasks.filter { task ->
-                    task.dueDate > today && task.status != 2
+                    task.dueDate!! > today && task.status != 2
                 }
             }
             TaskFilter.COMPLETED -> {
