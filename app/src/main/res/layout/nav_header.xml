@@ -14,7 +14,8 @@
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:contentDescription="@string/profile_image"
-            android:src="@drawable/ic_profile" />
+            android:src="@drawable/ic_profile"
+            android:visibility="gone"/>
 
         <TextView
             android:id="@+id/tv_user_name"
