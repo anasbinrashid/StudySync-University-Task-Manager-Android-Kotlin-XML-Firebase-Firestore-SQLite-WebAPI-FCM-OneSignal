@@ -30,7 +30,7 @@ StudySync is a comprehensive Android application designed to help students manag
   - Title and description
   - Due date and time
   - Priority levels
-  - Task status (Pending, In Progress, Completed)
+  - Task status (Not Started, In Progress, Completed)
   - Task type categorization
   - Grade tracking
   - Course association
@@ -51,11 +51,10 @@ StudySync is a comprehensive Android application designed to help students manag
 - Resource features:
   - Title and description
   - Course association
-  - Tagging system
   - File attachments
   - Thumbnail generation for images
 - Resource organization and search
-- File upload and download capabilities
+- File upload capabilities
 
 ### 5. Dashboard
 - Overview of academic progress
@@ -65,17 +64,11 @@ StudySync is a comprehensive Android application designed to help students manag
 - Visual progress indicators
 
 ### 6. Notifications System
-- Local notifications for:
+- Notifications for:
   - Task reminders
   - Due date alerts
   - Course updates
   - Resource additions
-- Customizable notification settings
-- Multiple reminder time options:
-  - 15 minutes before
-  - 30 minutes before
-  - 1 hour before
-  - 1 day before
 - Notification preferences management
 
 ### 7. Data Synchronization
@@ -87,7 +80,6 @@ StudySync is a comprehensive Android application designed to help students manag
 - Sync status indicators
 
 ### 8. Settings
-- Theme customization
 - Notification preferences
 - Default reminder settings
 - Data management options
@@ -111,7 +103,6 @@ StudySync is a comprehensive Android application designed to help students manag
 ### UI/UX
 - Material Design implementation
 - Responsive layouts
-- Dark/Light theme support
 - Custom animations and transitions
 - Intuitive navigation
 
@@ -173,4 +164,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Firebase for backend services
 - Material Design for UI components
 - MPAndroidChart for statistics visualization
-- OneSignal for push notification services 
+- OneSignal for push notification services
