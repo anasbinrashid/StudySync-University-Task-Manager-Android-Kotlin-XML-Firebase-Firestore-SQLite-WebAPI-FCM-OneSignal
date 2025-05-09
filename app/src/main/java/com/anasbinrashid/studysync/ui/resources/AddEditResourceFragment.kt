@@ -12,6 +12,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +22,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.bumptech.glide.Glide
@@ -28,6 +30,7 @@ import com.anasbinrashid.studysync.R
 import com.anasbinrashid.studysync.databinding.FragmentAddEditResourceBinding
 import com.anasbinrashid.studysync.model.Course
 import com.anasbinrashid.studysync.model.Resource
+import com.anasbinrashid.studysync.repository.ResourceRepository
 import com.anasbinrashid.studysync.util.DatabaseHelper
 import com.anasbinrashid.studysync.util.NotificationHelper
 import com.google.android.material.chip.Chip
@@ -35,6 +38,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -722,11 +727,35 @@ class AddEditResourceFragment : Fragment() {
         // Add tags
         val finalResource = resource.copy(tags = tagsList.toList())
 
-        // Save to local database
+        // Save to local database (SQLite)
         if (isEditMode) {
             dbHelper.updateResource(finalResource)
         } else {
             dbHelper.addResource(finalResource)
+        }
+
+        // Save to MySQL/phpMyAdmin through API
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val resourceRepository = ResourceRepository(requireContext())
+                val result = if (isEditMode) {
+                    resourceRepository.updateResource(finalResource)
+                } else {
+                    resourceRepository.createResource(finalResource)
+                }
+
+                result.fold(
+                    onSuccess = {
+                        // Mark as synced in local database
+                        dbHelper.markResourceAsSynced(finalResource.id)
+                    },
+                    onFailure = { e ->
+                        Log.e("AddEditResource", "Failed to save to MySQL: ${e.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("AddEditResource", "Error saving to MySQL: ${e.message}")
+            }
         }
 
         // Upload to Firebase
@@ -786,29 +815,36 @@ class AddEditResourceFragment : Fragment() {
     private fun deleteResource() {
         if (currentResource != null) {
             val resourceId = currentResource!!.id
+            showLoading(true)
 
-            // Delete from local database
+            // Delete from local database (SQLite)
             dbHelper.deleteResource(resourceId)
+
+            // Delete from MySQL/phpMyAdmin through API
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val resourceRepository = ResourceRepository(requireContext())
+                    currentResource?.let { resource ->
+                        resourceRepository.deleteResource(resource)
+                    }
+                } catch (e: Exception) {
+                    Log.e("AddEditResource", "Error deleting from MySQL: ${e.message}")
+                }
+            }
 
             // Delete from Firestore
             db.collection("resources")
                 .document(resourceId)
                 .delete()
                 .addOnSuccessListener {
-                    // Show notification for resource deletion
-                    val notificationHelper = NotificationHelper(requireContext())
-                    notificationHelper.showLocalNotification(
-                        resourceId.hashCode(),
-                        "Resource Deleted: ${currentResource!!.title}",
-                        "${currentResource!!.courseName} - ${getResourceTypeString(currentResource!!.type)}"
-                    )
-
-                    Toast.makeText(requireContext(), "Resource deleted", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
+                    Toast.makeText(requireContext(), "Resource deleted successfully", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }
                 .addOnFailureListener { e ->
-                    // Continue with local deletion even if Firestore deletion fails
-                    Toast.makeText(requireContext(), "Resource deleted locally", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
+                    // Even if Firestore deletion fails, we've deleted from other databases
+                    Toast.makeText(requireContext(), "Resource deleted from local and MySQL databases", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 }
         }

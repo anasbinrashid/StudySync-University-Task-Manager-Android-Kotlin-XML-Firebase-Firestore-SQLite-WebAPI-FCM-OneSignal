@@ -74,7 +74,12 @@ class ResourceRepository(private val context: Context) {
                 Log.d(TAG, "Resource saved to local database successfully")
                 
                 // Then try to save to API
+                Log.d(TAG, "Attempting to save to API...")
                 val response = localResourceApiService.createResource(resource)
+                
+                Log.d(TAG, "API Response code: ${response.code()}")
+                Log.d(TAG, "API Response body: ${response.body()}")
+                Log.d(TAG, "API Error body: ${response.errorBody()?.string()}")
                 
                 if (response.isSuccessful) {
                     response.body()?.let { savedResource ->
