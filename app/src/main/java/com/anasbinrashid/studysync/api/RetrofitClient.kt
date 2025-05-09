@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
     private const val TAG = "RetrofitClient"
-    private const val BASE_URL = "http://192.168.56.1/studysync_api/"
+    private const val BASE_URL = "http://192.168.18.21/studysync_api/"
 
     init {
         Log.d(TAG, "Initializing RetrofitClient with BASE_URL: $BASE_URL")

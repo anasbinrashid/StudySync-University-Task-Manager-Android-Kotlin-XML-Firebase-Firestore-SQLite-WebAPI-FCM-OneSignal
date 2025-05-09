@@ -27,7 +27,7 @@ class ResourceRepository(private val context: Context) {
         return try {
             Log.d(TAG, "Getting resource by ID: $id")
             val response = localResourceApiService.getResourceById(id)
-            
+
             if (response.isSuccessful) {
                 response.body()?.let {
                     Log.d(TAG, "Resource found: $it")
@@ -47,7 +47,7 @@ class ResourceRepository(private val context: Context) {
         return try {
             Log.d(TAG, "Getting resources for user: $userId")
             val response = localResourceApiService.getResourcesByUserId(userId)
-            
+
             if (response.isSuccessful) {
                 response.body()?.let {
                     Log.d(TAG, "Found ${it.size} resources")
@@ -66,27 +66,34 @@ class ResourceRepository(private val context: Context) {
     suspend fun createResource(resource: Resource): Result<Resource> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Creating resource: $resource")
-            
+
             // First try to save to local database
             val localResult = dbHelper.addResource(resource)
-            
+
             if (localResult > 0) {
                 Log.d(TAG, "Resource saved to local database successfully")
-                
+
                 // Then try to save to API
                 Log.d(TAG, "Attempting to save to API...")
-                val response = localResourceApiService.createResource(resource)
-                
+                val response = localResourceApiService.createResource(action = "create", resource = resource)
+
                 Log.d(TAG, "API Response code: ${response.code()}")
                 Log.d(TAG, "API Response body: ${response.body()}")
                 Log.d(TAG, "API Error body: ${response.errorBody()?.string()}")
-                
+
                 if (response.isSuccessful) {
-                    response.body()?.let { savedResource ->
-                        Log.d(TAG, "Resource created successfully in API: $savedResource")
-                        // Mark as synced in local database
-                        dbHelper.markResourceAsSynced(savedResource.id)
-                        Result.success(savedResource)
+                    response.body()?.let { responseMap ->
+                        val success = responseMap["success"] as? Boolean ?: false
+                        if (success) {
+                            Log.d(TAG, "Resource created successfully in API")
+                            // Mark as synced in local database
+                            dbHelper.markResourceAsSynced(resource.id)
+                            Result.success(resource)
+                        } else {
+                            val message = responseMap["message"] as? String ?: "Unknown error"
+                            Log.e(TAG, "API error: $message")
+                            Result.failure(Exception("API error: $message"))
+                        }
                     } ?: run {
                         Log.e(TAG, "API response body is null")
                         Result.failure(Exception("API response body is null"))
@@ -110,12 +117,19 @@ class ResourceRepository(private val context: Context) {
     suspend fun updateResource(resource: Resource): Result<Resource> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Updating resource: $resource")
-            val response = localResourceApiService.updateResource(resource)
-            
+            val response = localResourceApiService.updateResource(action = "update", resource = resource)
+
             if (response.isSuccessful) {
-                response.body()?.let {
-                    Log.d(TAG, "Resource updated successfully: $it")
-                    Result.success(it)
+                response.body()?.let { responseMap ->
+                    val success = responseMap["success"] as? Boolean ?: false
+                    if (success) {
+                        Log.d(TAG, "Resource updated successfully")
+                        Result.success(resource)
+                    } else {
+                        val message = responseMap["message"] as? String ?: "Unknown error"
+                        Log.e(TAG, "API error: $message")
+                        Result.failure(Exception("API error: $message"))
+                    }
                 } ?: run {
                     Log.e(TAG, "Response body is null")
                     Result.failure(Exception("Response body is null"))
@@ -134,11 +148,28 @@ class ResourceRepository(private val context: Context) {
     suspend fun deleteResource(resource: Resource): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Deleting resource: $resource")
-            val response = localResourceApiService.deleteResource(resource)
-            
+            val deleteParams = mapOf("id" to resource.id)
+            val response = localResourceApiService.deleteResource(action = "delete", deleteParams)
+
+            Log.d(TAG, "Delete API Response code: ${response.code()}")
+            Log.d(TAG, "Delete API Response body: ${response.body()}")
+            Log.d(TAG, "Delete API Error body: ${response.errorBody()?.string()}")
+
             if (response.isSuccessful) {
-                Log.d(TAG, "Resource deleted successfully")
-                Result.success(Unit)
+                response.body()?.let { responseMap ->
+                    val success = responseMap["success"] as? Boolean ?: false
+                    if (success) {
+                        Log.d(TAG, "Resource deleted successfully from API")
+                        Result.success(Unit)
+                    } else {
+                        val message = responseMap["message"] as? String ?: "Unknown error"
+                        Log.e(TAG, "API error: $message")
+                        Result.failure(Exception("API error: $message"))
+                    }
+                } ?: run {
+                    Log.e(TAG, "Delete response body is null")
+                    Result.failure(Exception("Delete response body is null"))
+                }
             } else {
                 val errorBody = response.errorBody()?.string()
                 Log.e(TAG, "Failed to delete resource. Error: $errorBody")
@@ -153,13 +184,13 @@ class ResourceRepository(private val context: Context) {
     suspend fun uploadFile(resourceId: String, file: File): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Uploading file for resource $resourceId: ${file.absolutePath}")
-            
+
             val requestFile = file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
             val resourceIdBody = resourceId.toRequestBody("text/plain".toMediaTypeOrNull())
             val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
-            
+
             val response = localResourceApiService.uploadFile(resourceIdBody, filePart)
-            
+
             if (response.isSuccessful) {
                 Log.d(TAG, "File uploaded successfully")
                 Result.success(Unit)
@@ -178,7 +209,7 @@ class ResourceRepository(private val context: Context) {
         try {
             Log.d(TAG, "Downloading file: $filePath")
             val response = localResourceApiService.downloadFile(filePath)
-            
+
             if (response.isSuccessful) {
                 response.body()?.let {
                     Log.d(TAG, "File downloaded successfully")
@@ -197,4 +228,4 @@ class ResourceRepository(private val context: Context) {
             Result.failure(e)
         }
     }
-} 
+}

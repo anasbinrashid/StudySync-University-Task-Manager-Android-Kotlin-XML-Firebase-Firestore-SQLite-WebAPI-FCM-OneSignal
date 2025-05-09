@@ -7,13 +7,22 @@ data class Resource(
     val userId: String = "",
     val title: String = "",
     val description: String = "",
-    val type: Int = 0, // 0: Note, 1: Image, 2: Document, 3: Link
-    val filePath: String = "",
     val courseId: String = "",
     val courseName: String = "",
-    val tags: List<String> = listOf(),
+    val type: Int = 0,
+    val filePath: String = "",
+    val tags: List<String> = emptyList(),
     val dateAdded: Date = Date(),
     val lastModified: Date = Date(),
-    val isSynced: Boolean = false,
-    val thumbnailPath: String = ""
-)
+    val thumbnailPath: String = "",
+    val isSynced: Boolean = false
+) {
+    // Computed properties for API serialization
+    val user_id: String get() = userId
+    val course_id: String get() = courseId
+    val course_name: String get() = courseName
+    val file_path: String get() = filePath
+    val date_added: Long get() = dateAdded.time
+    val last_updated: Long get() = lastModified.time
+    val thumbnail_path: String get() = thumbnailPath
+}

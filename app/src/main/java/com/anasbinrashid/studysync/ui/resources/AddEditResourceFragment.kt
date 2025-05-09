@@ -38,8 +38,10 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -110,6 +112,15 @@ class AddEditResourceFragment : Fragment() {
                 selectedImageUri = uri
                 loadImagePreview(selectedImageUri)
             }
+        }
+    }
+
+    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, exception ->
+        Log.e("AddEditResource", "Caught coroutine exception", exception)
+        // Handle the exception, possibly showing a message to the user
+        if (isAdded && context != null) {
+            showLoading(false)
+            Toast.makeText(requireContext(), "Operation failed: ${exception.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -569,7 +580,8 @@ class AddEditResourceFragment : Fragment() {
             type = selectedType,
             dateAdded = if (isEditMode && currentResource != null) currentResource!!.dateAdded else Date(),
             lastModified = Date(),
-            isSynced = false
+            isSynced = false,
+            tags = tagsList.toList() // Add tags here directly
         )
 
         // Handle content based on type
@@ -724,30 +736,27 @@ class AddEditResourceFragment : Fragment() {
     }
 
     private fun completeResourceSave(resource: Resource) {
-        // Add tags
-        val finalResource = resource.copy(tags = tagsList.toList())
-
         // Save to local database (SQLite)
         if (isEditMode) {
-            dbHelper.updateResource(finalResource)
+            dbHelper.updateResource(resource)
         } else {
-            dbHelper.addResource(finalResource)
+            dbHelper.addResource(resource)
         }
 
         // Save to MySQL/phpMyAdmin through API
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             try {
                 val resourceRepository = ResourceRepository(requireContext())
                 val result = if (isEditMode) {
-                    resourceRepository.updateResource(finalResource)
+                    resourceRepository.updateResource(resource)
                 } else {
-                    resourceRepository.createResource(finalResource)
+                    resourceRepository.createResource(resource)
                 }
 
                 result.fold(
                     onSuccess = {
                         // Mark as synced in local database
-                        dbHelper.markResourceAsSynced(finalResource.id)
+                        dbHelper.markResourceAsSynced(resource.id)
                     },
                     onFailure = { e ->
                         Log.e("AddEditResource", "Failed to save to MySQL: ${e.message}")
@@ -759,7 +768,7 @@ class AddEditResourceFragment : Fragment() {
         }
 
         // Upload to Firebase
-        uploadToFirebase(finalResource)
+        uploadToFirebase(resource)
     }
 
     private fun uploadToFirebase(resource: Resource) {
@@ -813,40 +822,50 @@ class AddEditResourceFragment : Fragment() {
     }
 
     private fun deleteResource() {
-        if (currentResource != null) {
-            val resourceId = currentResource!!.id
+        currentResource?.let { resource ->
+            val resourceId = resource.id
             showLoading(true)
 
-            // Delete from local database (SQLite)
+            // Delete from local SQLite database
             dbHelper.deleteResource(resourceId)
 
             // Delete from MySQL/phpMyAdmin through API
-            lifecycleScope.launch(Dispatchers.IO) {
+            lifecycleScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
                 try {
                     val resourceRepository = ResourceRepository(requireContext())
-                    currentResource?.let { resource ->
-                        resourceRepository.deleteResource(resource)
+                    val result = resourceRepository.deleteResource(resource)
+
+                    // Log the result
+                    if (result.isSuccess) {
+                        Log.d("TAG", "Resource deleted from MySQL successfully")
+                    } else {
+                        Log.e("TAG", "Failed to delete resource from MySQL: ${result.exceptionOrNull()?.message}")
                     }
                 } catch (e: Exception) {
-                    Log.e("AddEditResource", "Error deleting from MySQL: ${e.message}")
+                    Log.e("TAG", "Error deleting resource from MySQL", e)
+                }
+
+                // Switch back to main thread for Firebase operations and UI updates
+                withContext(Dispatchers.Main) {
+                    if (!isAdded) return@withContext // Check if Fragment is still attached
+
+                    // Delete from Firestore
+                    val docRef = db.collection("resources").document(resourceId)
+                    docRef.delete()
+                        .addOnSuccessListener {
+                            if (!isAdded) return@addOnSuccessListener // Check if Fragment is still attached
+                            showLoading(false)
+                            showMessage("Resource deleted successfully")
+                            findNavController().navigateUp()
+                        }
+                        .addOnFailureListener { e ->
+                            if (!isAdded) return@addOnFailureListener // Check if Fragment is still attached
+                            showLoading(false)
+                            showMessage("Resource deleted from local database, but failed to delete from Firebase: ${e.message}")
+                            findNavController().navigateUp()
+                        }
                 }
             }
-
-            // Delete from Firestore
-            db.collection("resources")
-                .document(resourceId)
-                .delete()
-                .addOnSuccessListener {
-                    showLoading(false)
-                    Toast.makeText(requireContext(), "Resource deleted successfully", Toast.LENGTH_SHORT).show()
-                    findNavController().navigateUp()
-                }
-                .addOnFailureListener { e ->
-                    showLoading(false)
-                    // Even if Firestore deletion fails, we've deleted from other databases
-                    Toast.makeText(requireContext(), "Resource deleted from local and MySQL databases", Toast.LENGTH_SHORT).show()
-                    findNavController().navigateUp()
-                }
         }
     }
 
@@ -867,6 +886,11 @@ class AddEditResourceFragment : Fragment() {
     }
 
     private fun showError(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+        findNavController().navigateUp()
+    }
+
+    private fun showMessage(message: String) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
         findNavController().navigateUp()
     }

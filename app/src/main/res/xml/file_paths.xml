@@ -2,4 +2,10 @@
 <paths>
     <external-files-path name="my_images" path="Pictures" />
     <external-files-path name="my_documents" path="Documents" />
+    <external-path name="external_files" path="." />
+    <files-path name="internal_files" path="." />
+    <cache-path name="cache_files" path="." />
+    <external-files-path name="external_app_files" path="." />
+    <external-cache-path name="external_cache_files" path="." />
+
 </paths>

@@ -14,21 +14,30 @@ interface LocalResourceApiService {
     @GET("resources.php")
     suspend fun getResourcesByUserId(@Query("user_id") userId: String): Response<List<Resource>>
 
-    @POST("resources.php?action=create")
-    suspend fun createResource(@Body resource: Resource): Response<Resource>
+    @POST("resources.php")
+    suspend fun createResource(
+        @Query("action") action: String = "create",
+        @Body resource: Resource
+    ): Response<Map<String, Any>>
 
-    @POST("resources.php?action=update")
-    suspend fun updateResource(@Body resource: Resource): Response<Resource>
+    @POST("resources.php")
+    suspend fun updateResource(
+        @Query("action") action: String = "update",
+        @Body resource: Resource
+    ): Response<Map<String, Any>>
 
-    @POST("resources.php?action=delete")
-    suspend fun deleteResource(@Body resource: Resource): Response<Unit>
+    @POST("resources.php")
+    suspend fun deleteResource(
+        @Query("action") action: String = "delete",
+        @Body resource: Map<String, String>
+    ): Response<Map<String, Any>>
 
     @Multipart
     @POST("upload.php")
     suspend fun uploadFile(
         @Part("resource_id") resourceId: RequestBody,
         @Part file: MultipartBody.Part
-    ): Response<Unit>
+    ): Response<Map<String, Any>>
 
     @GET("download.php")
     suspend fun downloadFile(@Query("file_path") filePath: String): Response<ByteArray>
