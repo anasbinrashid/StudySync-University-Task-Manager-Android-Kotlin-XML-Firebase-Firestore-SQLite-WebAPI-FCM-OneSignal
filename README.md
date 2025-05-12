@@ -160,6 +160,7 @@ StudySync is a comprehensive Android application designed to help students manag
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
+## Anas and Hasnain
 
 - Firebase for backend services
 - Material Design for UI components
