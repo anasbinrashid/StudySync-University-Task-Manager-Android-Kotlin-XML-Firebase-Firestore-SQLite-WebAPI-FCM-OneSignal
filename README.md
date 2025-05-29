@@ -69,7 +69,6 @@ StudySync is a comprehensive Android application designed to help students manag
   - Due date alerts
   - Course updates
   - Resource additions
-- Notification preferences management
 
 ### 7. Data Synchronization
 - Offline-first architecture
@@ -157,10 +156,9 @@ StudySync is a comprehensive Android application designed to help students manag
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.
 
 ## Acknowledgments
-## Anas and Hasnain
 
 - Firebase for backend services
 - Material Design for UI components
